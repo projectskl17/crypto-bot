@@ -86,6 +86,35 @@ def start(message):
         bot.send_message(message.chat.id, "This command is having an error. Please wait for the admin to fix it.")
         bot.send_message(OWNER_ID, "Your bot got an error, fix it fast!\n Error on command: "+message.text)
 
+@bot.message_handler(commands=['addcoin'])
+def add_coin(message):
+    try:
+        if str(message.chat.id) != str(OWNER_ID):
+            bot.send_message(message.chat.id, "❌ You are not authorized to use this command.")
+            return
+
+        try:
+            parts = message.text.split(' ')[1].split(',')
+            user_id = parts[0].strip()
+            amount = int(parts[1].strip())
+        except (IndexError, ValueError):
+            bot.send_message(message.chat.id, "❌ Invalid format. Use /addcoin user_id,amount")
+            return
+
+        current_balance = db.get_balance(user_id)
+        new_balance = current_balance + amount
+        db.update_balance(user_id, amount)
+
+        bot.send_message(message.chat.id, f"✅ Added {amount} {TOKEN} to user {user_id}. New balance: {new_balance}")
+        
+        try:
+            bot.send_message(user_id, f"💰 Your balance has been updated. Added: {amount} {TOKEN}")
+        except Exception as notify_error:
+            print(f"Could not notify user {user_id}: {notify_error}")
+
+    except Exception as e:
+        print(f"Error in /addcoin command: {e}")
+        bot.send_message(message.chat.id, "An error occurred while processing the command.")
 
 @bot.callback_query_handler(func=lambda call: True)
 def query_handler(call):
